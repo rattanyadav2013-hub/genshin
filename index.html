@@ -3,30 +3,31 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bird Fly Game</title>
+<title>Neon Bird Fly</title>
 <style>
 body {
     margin: 0;
     overflow: hidden;
-    background-color: #70c5ce;
+    background-color: #050510;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
-    font-family: monospace;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 canvas {
-    background-color: #70c5ce;
-    border: 2px solid #000;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    background: linear-gradient(180deg, #0b0f19 0%, #1a1a2e 100%);
+    border: 2px solid rgba(0, 255, 255, 0.2);
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+    border-radius: 12px;
 }
 #scoreBoard {
     position: absolute;
-    top: 30px;
-    font-size: 40px;
+    top: 40px;
+    font-size: 50px;
     font-weight: bold;
-    color: white;
-    text-shadow: 3px 3px 0 #000;
+    color: #fff;
+    text-shadow: 0 0 20px #0ff;
     z-index: 10;
     pointer-events: none;
 }
@@ -34,7 +35,7 @@ canvas {
 </head>
 <body>
 <div id="scoreBoard">0</div>
-<canvas id="gameCanvas" width="320" height="480"></canvas>
+<canvas id="gameCanvas" width="360" height="600"></canvas>
 <script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -44,83 +45,117 @@ let frames = 0;
 let score = 0;
 let gameOver = false;
 
+let particles = [];
+let backgroundStars = [];
+
+for (let i = 0; i < 50; i++) {
+    backgroundStars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        size: Math.random() * 2,
+        speed: Math.random() * 0.5 + 0.1
+    });
+}
+
 const bird = {
-    x: 50,
-    y: 150,
-    w: 30,
-    h: 24,
+    x: 60,
+    y: 250,
+    r: 15,
     velocity: 0,
-    gravity: 0.25,
-    jump: -4.5,
+    gravity: 0.35,
+    jump: -6,
+    rotation: 0,
     draw() {
-        ctx.fillStyle = "#ffcc00";
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        this.rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (this.velocity * 0.1)));
+        ctx.rotate(this.rotation);
+
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = "#0ff";
+        ctx.fillStyle = "#0ff";
         ctx.beginPath();
-        ctx.arc(this.x + this.w/2, this.y + this.h/2, this.w/2, 0, Math.PI * 2);
+        ctx.arc(0, 0, this.r, 0, Math.PI * 2);
         ctx.fill();
-        ctx.stroke();
-        
-        ctx.fillStyle = "white";
+
+        ctx.fillStyle = "#fff";
         ctx.beginPath();
-        ctx.arc(this.x + this.w/2 + 8, this.y + this.h/2 - 4, 4, 0, Math.PI * 2);
+        ctx.arc(6, -4, 5, 0, Math.PI * 2);
         ctx.fill();
-        
-        ctx.fillStyle = "black";
+
+        ctx.fillStyle = "#000";
         ctx.beginPath();
-        ctx.arc(this.x + this.w/2 + 9, this.y + this.h/2 - 4, 2, 0, Math.PI * 2);
+        ctx.arc(8, -4, 2, 0, Math.PI * 2);
         ctx.fill();
+
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+        ctx.beginPath();
+        ctx.ellipse(-6, 2, 8, 4, Math.sin(frames * 0.2) * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
     },
     update() {
         this.velocity += this.gravity;
         this.y += this.velocity;
         
-        if (this.y + this.h >= canvas.height - 112) {
-            this.y = canvas.height - 112 - this.h;
-            gameOver = true;
+        if (this.y + this.r >= canvas.height - 80) {
+            this.y = canvas.height - 80 - this.r;
+            if (!gameOver) die();
         }
         
-        if (this.y <= 0) {
-            this.y = 0;
+        if (this.y - this.r <= 0) {
+            this.y = this.r;
             this.velocity = 0;
         }
     },
     flap() {
         this.velocity = this.jump;
+        for(let i=0; i<5; i++) {
+            particles.push({
+                x: this.x - 10,
+                y: this.y + 10,
+                vx: Math.random() * -3 - 1,
+                vy: Math.random() * 2 - 1,
+                size: Math.random() * 4 + 2,
+                life: 1,
+                color: "#0ff"
+            });
+        }
     }
 };
 
 const pipes = {
     items: [],
-    w: 50,
-    gap: 120,
-    dx: 2,
+    w: 60,
+    gap: 150,
+    dx: 3,
     draw() {
         for (let i = 0; i < this.items.length; i++) {
             let p = this.items[i];
             
-            ctx.fillStyle = "#73bf2e";
+            let gradTop = ctx.createLinearGradient(p.x, 0, p.x + this.w, 0);
+            gradTop.addColorStop(0, "#f0f");
+            gradTop.addColorStop(1, "#800080");
+
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "#f0f";
+            
+            ctx.fillStyle = gradTop;
             ctx.fillRect(p.x, 0, this.w, p.top);
-            ctx.fillStyle = "#558c22";
-            ctx.fillRect(p.x + this.w - 10, 0, 10, p.top);
-            ctx.strokeRect(p.x, 0, this.w, p.top);
-            
-            ctx.fillStyle = "#73bf2e";
+            ctx.fillRect(p.x - 5, p.top - 20, this.w + 10, 20);
+
             ctx.fillRect(p.x, canvas.height - p.bottom, this.w, p.bottom);
-            ctx.fillStyle = "#558c22";
-            ctx.fillRect(p.x + this.w - 10, canvas.height - p.bottom, 10, p.bottom);
-            ctx.strokeRect(p.x, canvas.height - p.bottom, this.w, p.bottom);
-            
-            ctx.fillStyle = "#73bf2e";
-            ctx.fillRect(p.x - 4, p.top - 20, this.w + 8, 20);
-            ctx.strokeRect(p.x - 4, p.top - 20, this.w + 8, 20);
-            
-            ctx.fillRect(p.x - 4, canvas.height - p.bottom, this.w + 8, 20);
-            ctx.strokeRect(p.x - 4, canvas.height - p.bottom, this.w + 8, 20);
+            ctx.fillRect(p.x - 5, canvas.height - p.bottom, this.w + 10, 20);
+
+            ctx.shadowBlur = 0;
         }
     },
     update() {
-        if (frames % 100 === 0) {
-            let topHeight = Math.max(50, Math.random() * (canvas.height - 112 - this.gap - 100));
-            let bottomHeight = canvas.height - 112 - this.gap - topHeight;
+        if (frames % 90 === 0) {
+            let topHeight = Math.max(60, Math.random() * (canvas.height - 80 - this.gap - 120));
+            let bottomHeight = canvas.height - 80 - this.gap - topHeight;
             this.items.push({
                 x: canvas.width,
                 top: topHeight,
@@ -132,20 +167,21 @@ const pipes = {
             let p = this.items[i];
             p.x -= this.dx;
 
-            if (bird.x + bird.w > p.x && bird.x < p.x + this.w && bird.y < p.top) {
-                gameOver = true;
+            if (bird.x + bird.r > p.x && bird.x - bird.r < p.x + this.w && bird.y - bird.r < p.top) {
+                if (!gameOver) die();
             }
-            if (bird.x + bird.w > p.x && bird.x < p.x + this.w && bird.y + bird.h > canvas.height - p.bottom) {
-                gameOver = true;
+            if (bird.x + bird.r > p.x && bird.x - bird.r < p.x + this.w && bird.y + bird.r > canvas.height - p.bottom) {
+                if (!gameOver) die();
             }
 
-            if (p.x + this.w < bird.x && !p.passed) {
+            if (p.x + this.w < bird.x - bird.r && !p.passed) {
                 score++;
                 scoreBoard.innerText = score;
                 p.passed = true;
+                if(this.dx < 6) this.dx += 0.1;
             }
 
-            if (p.x + this.w < -20) {
+            if (p.x + this.w < -30) {
                 this.items.shift();
                 i--;
             }
@@ -153,47 +189,70 @@ const pipes = {
     },
     reset() {
         this.items = [];
+        this.dx = 3;
     }
 };
 
 const ground = {
     x: 0,
-    y: canvas.height - 112,
+    y: canvas.height - 80,
     w: canvas.width,
-    h: 112,
-    dx: 2,
+    h: 80,
+    dx: 3,
     draw() {
-        ctx.fillStyle = "#ded895";
-        ctx.fillRect(this.x, this.y, this.w, this.h);
-        ctx.fillRect(this.x + this.w, this.y, this.w, this.h);
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = "#f0f";
+        ctx.fillStyle = "#1a0033";
+        ctx.fillRect(this.x, this.y, this.w * 2, this.h);
         
-        ctx.fillStyle = "#73bf2e";
-        ctx.fillRect(this.x, this.y, this.w, 15);
-        ctx.fillRect(this.x + this.w, this.y, this.w, 15);
-        
-        ctx.beginPath();
-        ctx.moveTo(this.x, this.y);
-        ctx.lineTo(this.x + this.w * 2, this.y);
-        ctx.stroke();
+        ctx.fillStyle = "#f0f";
+        ctx.fillRect(this.x, this.y, this.w * 2, 5);
+        ctx.shadowBlur = 0;
+
+        for (let i = 0; i < this.w * 2; i += 40) {
+            ctx.fillStyle = "rgba(255, 0, 255, 0.2)";
+            ctx.beginPath();
+            ctx.moveTo(this.x + i, this.y + 5);
+            ctx.lineTo(this.x + i - 30, this.y + this.h);
+            ctx.lineTo(this.x + i - 10, this.y + this.h);
+            ctx.lineTo(this.x + i + 20, this.y + 5);
+            ctx.fill();
+        }
     },
     update() {
-        this.x -= this.dx;
+        this.x -= pipes.dx;
         if (this.x <= -this.w) {
             this.x = 0;
         }
     }
 };
 
+function die() {
+    gameOver = true;
+    for(let i=0; i<30; i++) {
+        particles.push({
+            x: bird.x,
+            y: bird.y,
+            vx: (Math.random() - 0.5) * 10,
+            vy: (Math.random() - 0.5) * 10,
+            size: Math.random() * 5 + 2,
+            life: 1,
+            color: Math.random() > 0.5 ? "#0ff" : "#fff"
+        });
+    }
+}
+
 function handleInput() {
     if (gameOver) {
-        bird.y = 150;
+        if (particles.length > 0) return;
+        bird.y = 250;
         bird.velocity = 0;
+        bird.rotation = 0;
         pipes.reset();
         score = 0;
         scoreBoard.innerText = score;
         frames = 0;
         gameOver = false;
-        loop();
     } else {
         bird.flap();
     }
@@ -207,43 +266,86 @@ window.addEventListener("keydown", (e) => {
 });
 
 function draw() {
-    ctx.fillStyle = "#70c5ce";
+    ctx.fillStyle = "#050510";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "#fff";
+    for (let star of backgroundStars) {
+        ctx.globalAlpha = Math.random() * 0.5 + 0.5;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1.0;
+
     pipes.draw();
     ground.draw();
-    bird.draw();
+    
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+    }
+
+    if (!gameOver || particles.length > 0) {
+        if (!gameOver) bird.draw();
+    }
 }
 
 function update() {
-    bird.update();
-    ground.update();
-    pipes.update();
+    for (let star of backgroundStars) {
+        star.x -= star.speed;
+        if (star.x < 0) {
+            star.x = canvas.width;
+            star.y = Math.random() * canvas.height;
+        }
+    }
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.02;
+        p.size *= 0.95;
+        if (p.life <= 0) {
+            particles.splice(i, 1);
+        }
+    }
+
+    if (!gameOver) {
+        bird.update();
+        ground.update();
+        pipes.update();
+        frames++;
+    }
 }
 
 function loop() {
-    if (gameOver) {
-        ctx.fillStyle = "rgba(0,0,0,0.5)";
+    update();
+    draw();
+
+    if (gameOver && particles.length === 0) {
+        ctx.fillStyle = "rgba(0, 0, 10, 0.7)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         ctx.fillStyle = "#fff";
-        ctx.strokeStyle = "#000";
-        ctx.lineWidth = 2;
-        ctx.font = "bold 35px monospace";
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = "#0ff";
+        ctx.font = "bold 40px 'Segoe UI'";
         ctx.textAlign = "center";
+        ctx.fillText("CRASHED", canvas.width/2, canvas.height/2 - 20);
         
-        ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2 - 20);
-        ctx.strokeText("GAME OVER", canvas.width/2, canvas.height/2 - 20);
-        
-        ctx.font = "20px monospace";
-        ctx.fillText("Click to Retry", canvas.width/2, canvas.height/2 + 20);
-        ctx.strokeText("Click to Retry", canvas.width/2, canvas.height/2 + 20);
-        
+        ctx.font = "20px 'Segoe UI'";
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "#aaa";
+        ctx.fillText("Click to Restart", canvas.width/2, canvas.height/2 + 30);
         ctx.textAlign = "start";
-        return;
     }
-    update();
-    draw();
-    frames++;
+
     requestAnimationFrame(loop);
 }
 
