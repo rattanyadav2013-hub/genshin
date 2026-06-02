@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Neon Bird Fly - Fullscreen</title>
+<title>Neon Bird Fly - Stable Edition</title>
 <style>
 body {
     margin: 0;
@@ -51,9 +51,10 @@ let gameOver = false;
 let particles = [];
 let backgroundStars = [];
 
+// Initialize Background Stars
 function initStars() {
     backgroundStars = [];
-    for (let i = 0; i < 150; i++) {
+    for (let i = 0; i < 100; i++) {
         backgroundStars.push({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
@@ -64,161 +65,16 @@ function initStars() {
 }
 initStars();
 
-const bird = {
-    x: Math.min(150, canvas.width / 4),
-    y: canvas.height / 2,
-    r: 18,
-    velocity: 0,
-    gravity: 0.35,
-    jump: -7.5,
-    rotation: 0,
-    draw() {
-        ctx.save();
-        ctx.translate(this.x, this.y);
-        this.rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (this.velocity * 0.1)));
-        ctx.rotate(this.rotation);
-
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = "#0ff";
-        ctx.fillStyle = "#0ff";
-        ctx.beginPath();
-        ctx.arc(0, 0, this.r, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = "#fff";
-        ctx.beginPath();
-        ctx.arc(7, -5, 6, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = "#000";
-        ctx.beginPath();
-        ctx.arc(9, -5, 2.5, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-        ctx.beginPath();
-        ctx.ellipse(-7, 3, 9, 5, Math.sin(frames * 0.2) * 0.5, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.restore();
-    },
-    update() {
-        this.velocity += this.gravity;
-        this.y += this.velocity;
-        
-        if (this.y + this.r >= canvas.height - 80) {
-            this.y = canvas.height - 80 - this.r;
-            if (!gameOver) die();
-        }
-        
-        if (this.y - this.r <= 0) {
-            this.y = this.r;
-            this.velocity = 0;
-        }
-    },
-    flap() {
-        this.velocity = this.jump;
-        for(let i=0; i<6; i++) {
-            particles.push({
-                x: this.x - 12,
-                y: this.y + 12,
-                vx: Math.random() * -3 - 1,
-                vy: Math.random() * 2 - 1,
-                size: Math.random() * 4 + 2,
-                life: 1,
-                color: "#0ff"
-            });
-        }
-    }
-};
-
-const pipes = {
-    items: [],
-    w: 70,
-    gap: 200,
-    dx: 4,
-    spawnCounter: 0,
-    draw() {
-        for (let i = 0; i < this.items.length; i++) {
-            let p = this.items[i];
-            
-            let gradTop = ctx.createLinearGradient(p.x, 0, p.x + this.w, 0);
-            gradTop.addColorStop(0, "#f0f");
-            gradTop.addColorStop(1, "#800080");
-
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = "#f0f";
-            
-            ctx.fillStyle = gradTop;
-            ctx.fillRect(p.x, 0, this.w, p.top);
-            ctx.fillRect(p.x - 5, p.top - 25, this.w + 10, 25);
-
-            ctx.fillRect(p.x, canvas.height - p.bottom, this.w, p.bottom);
-            ctx.fillRect(p.x - 5, canvas.height - p.bottom, this.w + 10, 25);
-
-            ctx.shadowBlur = 0;
-        }
-    },
-    update() {
-        this.spawnCounter += (this.dx / 4);
-        
-        if (this.spawnCounter >= 140) {
-            let topHeight = Math.max(80, Math.random() * (canvas.height - 80 - this.gap - 160));
-            let bottomHeight = canvas.height - 80 - this.gap - topHeight;
-            this.items.push({
-                x: canvas.width,
-                top: topHeight,
-                bottom: bottomHeight,
-                passed: false
-            });
-            this.spawnCounter = 0;
-        }
-
-        for (let i = 0; i < this.items.length; i++) {
-            let p = this.items[i];
-            p.x -= this.dx;
-
-            if (bird.x + bird.r > p.x && bird.x - bird.r < p.x + this.w && bird.y - bird.r < p.top) {
-                if (!gameOver) die();
-            }
-            if (bird.x + bird.r > p.x && bird.x - bird.r < p.x + this.w && bird.y + bird.r > canvas.height - p.bottom) {
-                if (!gameOver) die();
-            }
-
-            if (p.x + this.w < bird.x - bird.r && !p.passed) {
-                score++;
-                scoreBoard.innerText = score;
-                p.passed = true;
-                if(this.dx < 8) this.dx += 0.15;
-            }
-
-            if (p.x + this.w < -100) {
-                this.items.shift();
-                i--;
-            }
-        }
-    },
-    reset() {
-        this.items = [];
-        this.dx = 4;
-        this.spawnCounter = 0;
-    }
-};
-
 const ground = {
-    x: 0,
     h: 80,
+    x: 0,
     draw() {
         let y = canvas.height - this.h;
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = "#f0f";
         ctx.fillStyle = "#1a0033";
         ctx.fillRect(this.x, y, canvas.width * 2 + 200, this.h);
         
         ctx.fillStyle = "#f0f";
         ctx.fillRect(this.x, y, canvas.width * 2 + 200, 5);
-        ctx.shadowBlur = 0;
 
         for (let i = 0; i < canvas.width * 2 + 200; i += 60) {
             ctx.fillStyle = "rgba(255, 0, 255, 0.2)";
@@ -230,20 +86,164 @@ const ground = {
             ctx.fill();
         }
     },
+    update(speed) {
+        this.x -= speed;
+        if (this.x <= -60) this.x = 0;
+    }
+};
+
+const bird = {
+    x: Math.min(150, canvas.width / 3),
+    y: canvas.height / 2,
+    r: 16,
+    velocity: 0,
+    gravity: 0.4,
+    jump: -7.5,
+    rotation: 0,
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        this.rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (this.velocity * 0.1)));
+        ctx.rotate(this.rotation);
+
+        // Neon Glow
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = "#0ff";
+        ctx.fillStyle = "#0ff";
+        ctx.beginPath();
+        ctx.arc(0, 0, this.r, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.arc(6, -5, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#000";
+        ctx.beginPath();
+        ctx.arc(8, -5, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Wing
+        ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+        ctx.beginPath();
+        ctx.ellipse(-6, 2, 8, 4, Math.sin(frames * 0.2) * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    },
     update() {
-        this.x -= pipes.dx;
-        if (this.x <= -60) {
-            this.x = 0;
+        this.velocity += this.gravity;
+        this.y += this.velocity;
+        
+        // Floor collision
+        if (this.y + this.r >= canvas.height - ground.h) {
+            this.y = canvas.height - ground.h - this.r;
+            if (!gameOver) die();
         }
+        
+        // Ceiling collision
+        if (this.y - this.r <= 0) {
+            this.y = this.r;
+            this.velocity = 0;
+        }
+    },
+    flap() {
+        this.velocity = this.jump;
+        for(let i = 0; i < 5; i++) {
+            particles.push({
+                x: this.x - 10, y: this.y + 10,
+                vx: Math.random() * -3 - 1, vy: Math.random() * 2 - 1,
+                size: Math.random() * 4 + 2, life: 1, color: "#0ff"
+            });
+        }
+    }
+};
+
+const pipes = {
+    items: [],
+    w: 65,
+    baseGap: 180, // Safer gap
+    dx: 3.5,
+    spawnDistance: 0,
+    
+    draw() {
+        for (let i = 0; i < this.items.length; i++) {
+            let p = this.items[i];
+            
+            let gradTop = ctx.createLinearGradient(p.x, 0, p.x + this.w, 0);
+            gradTop.addColorStop(0, "#ff00ff");
+            gradTop.addColorStop(1, "#8a2be2");
+
+            ctx.fillStyle = gradTop;
+            
+            // Top Pipe
+            ctx.fillRect(p.x, 0, this.w, p.top);
+            ctx.fillRect(p.x - 4, p.top - 20, this.w + 8, 20); // Cap
+
+            // Bottom Pipe
+            ctx.fillRect(p.x, canvas.height - p.bottom, this.w, p.bottom);
+            ctx.fillRect(p.x - 4, canvas.height - p.bottom, this.w + 8, 20); // Cap
+        }
+    },
+    update() {
+        this.spawnDistance += this.dx;
+        
+        // Safely calculate spawn distance based on speed so they don't bunch up
+        if (this.spawnDistance >= 300) { 
+            let minPipeHeight = 60;
+            // Ensure math never results in negative numbers regardless of screen size
+            let maxPipeHeight = Math.max(minPipeHeight + 10, canvas.height - ground.h - this.baseGap - minPipeHeight);
+            let topHeight = Math.floor(Math.random() * (maxPipeHeight - minPipeHeight + 1) + minPipeHeight);
+            let bottomHeight = Math.max(minPipeHeight, canvas.height - ground.h - this.baseGap - topHeight);
+            
+            this.items.push({ x: canvas.width, top: topHeight, bottom: bottomHeight, passed: false });
+            this.spawnDistance = 0;
+        }
+
+        for (let i = 0; i < this.items.length; i++) {
+            let p = this.items[i];
+            p.x -= this.dx;
+
+            // Collision Detection
+            if (bird.x + bird.r - 2 > p.x && bird.x - bird.r + 2 < p.x + this.w) {
+                if (bird.y - bird.r + 2 < p.top || bird.y + bird.r - 2 > canvas.height - p.bottom) {
+                    if (!gameOver) die();
+                }
+            }
+
+            // Scoring & Speed Scaling (Capped speed to prevent glitches)
+            if (p.x + this.w < bird.x - bird.r && !p.passed) {
+                score++;
+                scoreBoard.innerText = score;
+                p.passed = true;
+                
+                // Cap max speed so game remains stable and playable
+                if (this.dx < 7.5) {
+                    this.dx += 0.08; 
+                }
+            }
+
+            // Cleanup off-screen pipes
+            if (p.x + this.w < -50) {
+                this.items.shift();
+                i--;
+            }
+        }
+    },
+    reset() {
+        this.items = [];
+        this.dx = 3.5;
+        this.spawnDistance = 300; // Spawn first pipe immediately
     }
 };
 
 function die() {
     gameOver = true;
-    for(let i=0; i<40; i++) {
+    for(let i = 0; i < 40; i++) {
         particles.push({
-            x: bird.x,
-            y: bird.y,
+            x: bird.x, y: bird.y,
             vx: (Math.random() - 0.5) * 12,
             vy: (Math.random() - 0.5) * 12,
             size: Math.random() * 6 + 2,
@@ -255,7 +255,7 @@ function die() {
 
 function handleInput() {
     if (gameOver) {
-        if (particles.length > 0) return;
+        if (particles.length > 0) return; // Wait for explosion to finish
         bird.y = canvas.height / 2;
         bird.velocity = 0;
         bird.rotation = 0;
@@ -269,21 +269,22 @@ function handleInput() {
     }
 }
 
+// Input Listeners
 canvas.addEventListener("mousedown", handleInput);
 canvas.addEventListener("touchstart", (e) => {
     e.preventDefault();
     handleInput();
 }, {passive: false});
 window.addEventListener("keydown", (e) => {
-    if (e.code === "Space" || e.code === "ArrowUp") {
-        handleInput();
-    }
+    if (e.code === "Space" || e.code === "ArrowUp") handleInput();
 });
 
 function draw() {
+    // Clear Screen
     ctx.fillStyle = "#050510";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // Draw Stars
     ctx.fillStyle = "#fff";
     for (let star of backgroundStars) {
         ctx.globalAlpha = Math.random() * 0.5 + 0.5;
@@ -296,6 +297,7 @@ function draw() {
     pipes.draw();
     ground.draw();
     
+    // Draw Particles
     for (let i = particles.length - 1; i >= 0; i--) {
         let p = particles[i];
         ctx.globalAlpha = p.life;
@@ -312,6 +314,7 @@ function draw() {
 }
 
 function update() {
+    // Update Stars
     for (let star of backgroundStars) {
         star.x -= star.speed;
         if (star.x < 0) {
@@ -320,11 +323,12 @@ function update() {
         }
     }
 
+    // Update Particles
     for (let i = particles.length - 1; i >= 0; i--) {
         let p = particles[i];
         p.x += p.vx;
         p.y += p.vy;
-        p.life -= 0.02;
+        p.life -= 0.025; // Decay faster to prevent lag
         p.size *= 0.95;
         if (p.life <= 0) {
             particles.splice(i, 1);
@@ -333,7 +337,7 @@ function update() {
 
     if (!gameOver) {
         bird.update();
-        ground.update();
+        ground.update(pipes.dx);
         pipes.update();
         frames++;
     }
@@ -343,18 +347,21 @@ function loop() {
     update();
     draw();
 
+    // Draw Game Over Screen
     if (gameOver && particles.length === 0) {
         ctx.fillStyle = "rgba(0, 0, 10, 0.7)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
         ctx.fillStyle = "#fff";
-        ctx.shadowBlur = 20;
+        ctx.shadowBlur = 15;
         ctx.shadowColor = "#0ff";
-        ctx.font = "bold 5vw 'Segoe UI'";
+        
+        let isMobile = canvas.width < 600;
+        ctx.font = `bold ${isMobile ? '40px' : '60px'} 'Segoe UI'`;
         ctx.textAlign = "center";
         ctx.fillText("CRASHED", canvas.width/2, canvas.height/2 - 20);
         
-        ctx.font = "2.5vw 'Segoe UI'";
+        ctx.font = `${isMobile ? '20px' : '30px'} 'Segoe UI'`;
         ctx.shadowBlur = 0;
         ctx.fillStyle = "#aaa";
         ctx.fillText("Tap or Click to Restart", canvas.width/2, canvas.height/2 + 40);
@@ -364,6 +371,8 @@ function loop() {
     requestAnimationFrame(loop);
 }
 
+// Start Game
+pipes.reset();
 loop();
 </script>
 </body>
