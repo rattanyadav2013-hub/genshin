@@ -3,27 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Neon Bird Fly</title>
+<title>Neon Bird Fly - Fullscreen</title>
 <style>
 body {
     margin: 0;
+    padding: 0;
     overflow: hidden;
     background-color: #050510;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 canvas {
+    display: block;
     background: linear-gradient(180deg, #0b0f19 0%, #1a1a2e 100%);
-    border: 2px solid rgba(0, 255, 255, 0.2);
-    box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
-    border-radius: 12px;
 }
 #scoreBoard {
     position: absolute;
     top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
     font-size: 50px;
     font-weight: bold;
     color: #fff;
@@ -35,35 +32,45 @@ canvas {
 </head>
 <body>
 <div id="scoreBoard">0</div>
-<canvas id="gameCanvas" width="360" height="600"></canvas>
+<canvas id="gameCanvas"></canvas>
 <script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const scoreBoard = document.getElementById("scoreBoard");
 
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
 let frames = 0;
 let score = 0;
 let gameOver = false;
-
 let particles = [];
 let backgroundStars = [];
 
-for (let i = 0; i < 50; i++) {
-    backgroundStars.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        size: Math.random() * 2,
-        speed: Math.random() * 0.5 + 0.1
-    });
+function initStars() {
+    backgroundStars = [];
+    for (let i = 0; i < 150; i++) {
+        backgroundStars.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 2,
+            speed: Math.random() * 0.5 + 0.1
+        });
+    }
 }
+initStars();
 
 const bird = {
-    x: 60,
-    y: 250,
-    r: 15,
+    x: Math.min(150, canvas.width / 4),
+    y: canvas.height / 2,
+    r: 18,
     velocity: 0,
     gravity: 0.35,
-    jump: -6,
+    jump: -7.5,
     rotation: 0,
     draw() {
         ctx.save();
@@ -80,18 +87,18 @@ const bird = {
 
         ctx.fillStyle = "#fff";
         ctx.beginPath();
-        ctx.arc(6, -4, 5, 0, Math.PI * 2);
+        ctx.arc(7, -5, 6, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.fillStyle = "#000";
         ctx.beginPath();
-        ctx.arc(8, -4, 2, 0, Math.PI * 2);
+        ctx.arc(9, -5, 2.5, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.shadowBlur = 0;
         ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
         ctx.beginPath();
-        ctx.ellipse(-6, 2, 8, 4, Math.sin(frames * 0.2) * 0.5, 0, Math.PI * 2);
+        ctx.ellipse(-7, 3, 9, 5, Math.sin(frames * 0.2) * 0.5, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.restore();
@@ -112,10 +119,10 @@ const bird = {
     },
     flap() {
         this.velocity = this.jump;
-        for(let i=0; i<5; i++) {
+        for(let i=0; i<6; i++) {
             particles.push({
-                x: this.x - 10,
-                y: this.y + 10,
+                x: this.x - 12,
+                y: this.y + 12,
                 vx: Math.random() * -3 - 1,
                 vy: Math.random() * 2 - 1,
                 size: Math.random() * 4 + 2,
@@ -128,9 +135,9 @@ const bird = {
 
 const pipes = {
     items: [],
-    w: 60,
-    gap: 150,
-    dx: 3,
+    w: 70,
+    gap: 200,
+    dx: 4,
     draw() {
         for (let i = 0; i < this.items.length; i++) {
             let p = this.items[i];
@@ -144,17 +151,17 @@ const pipes = {
             
             ctx.fillStyle = gradTop;
             ctx.fillRect(p.x, 0, this.w, p.top);
-            ctx.fillRect(p.x - 5, p.top - 20, this.w + 10, 20);
+            ctx.fillRect(p.x - 5, p.top - 25, this.w + 10, 25);
 
             ctx.fillRect(p.x, canvas.height - p.bottom, this.w, p.bottom);
-            ctx.fillRect(p.x - 5, canvas.height - p.bottom, this.w + 10, 20);
+            ctx.fillRect(p.x - 5, canvas.height - p.bottom, this.w + 10, 25);
 
             ctx.shadowBlur = 0;
         }
     },
     update() {
-        if (frames % 90 === 0) {
-            let topHeight = Math.max(60, Math.random() * (canvas.height - 80 - this.gap - 120));
+        if (frames % Math.floor(140 / (this.dx / 4)) === 0) {
+            let topHeight = Math.max(80, Math.random() * (canvas.height - 80 - this.gap - 160));
             let bottomHeight = canvas.height - 80 - this.gap - topHeight;
             this.items.push({
                 x: canvas.width,
@@ -178,10 +185,10 @@ const pipes = {
                 score++;
                 scoreBoard.innerText = score;
                 p.passed = true;
-                if(this.dx < 6) this.dx += 0.1;
+                if(this.dx < 8) this.dx += 0.15;
             }
 
-            if (p.x + this.w < -30) {
+            if (p.x + this.w < -100) {
                 this.items.shift();
                 i--;
             }
@@ -189,39 +196,37 @@ const pipes = {
     },
     reset() {
         this.items = [];
-        this.dx = 3;
+        this.dx = 4;
     }
 };
 
 const ground = {
     x: 0,
-    y: canvas.height - 80,
-    w: canvas.width,
     h: 80,
-    dx: 3,
     draw() {
+        let y = canvas.height - this.h;
         ctx.shadowBlur = 20;
         ctx.shadowColor = "#f0f";
         ctx.fillStyle = "#1a0033";
-        ctx.fillRect(this.x, this.y, this.w * 2, this.h);
+        ctx.fillRect(this.x, y, canvas.width * 2 + 200, this.h);
         
         ctx.fillStyle = "#f0f";
-        ctx.fillRect(this.x, this.y, this.w * 2, 5);
+        ctx.fillRect(this.x, y, canvas.width * 2 + 200, 5);
         ctx.shadowBlur = 0;
 
-        for (let i = 0; i < this.w * 2; i += 40) {
+        for (let i = 0; i < canvas.width * 2 + 200; i += 60) {
             ctx.fillStyle = "rgba(255, 0, 255, 0.2)";
             ctx.beginPath();
-            ctx.moveTo(this.x + i, this.y + 5);
-            ctx.lineTo(this.x + i - 30, this.y + this.h);
-            ctx.lineTo(this.x + i - 10, this.y + this.h);
-            ctx.lineTo(this.x + i + 20, this.y + 5);
+            ctx.moveTo(this.x + i, y + 5);
+            ctx.lineTo(this.x + i - 40, y + this.h);
+            ctx.lineTo(this.x + i - 15, y + this.h);
+            ctx.lineTo(this.x + i + 25, y + 5);
             ctx.fill();
         }
     },
     update() {
         this.x -= pipes.dx;
-        if (this.x <= -this.w) {
+        if (this.x <= -60) {
             this.x = 0;
         }
     }
@@ -229,13 +234,13 @@ const ground = {
 
 function die() {
     gameOver = true;
-    for(let i=0; i<30; i++) {
+    for(let i=0; i<40; i++) {
         particles.push({
             x: bird.x,
             y: bird.y,
-            vx: (Math.random() - 0.5) * 10,
-            vy: (Math.random() - 0.5) * 10,
-            size: Math.random() * 5 + 2,
+            vx: (Math.random() - 0.5) * 12,
+            vy: (Math.random() - 0.5) * 12,
+            size: Math.random() * 6 + 2,
             life: 1,
             color: Math.random() > 0.5 ? "#0ff" : "#fff"
         });
@@ -245,7 +250,7 @@ function die() {
 function handleInput() {
     if (gameOver) {
         if (particles.length > 0) return;
-        bird.y = 250;
+        bird.y = canvas.height / 2;
         bird.velocity = 0;
         bird.rotation = 0;
         pipes.reset();
@@ -259,6 +264,10 @@ function handleInput() {
 }
 
 canvas.addEventListener("mousedown", handleInput);
+canvas.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    handleInput();
+}, {passive: false});
 window.addEventListener("keydown", (e) => {
     if (e.code === "Space" || e.code === "ArrowUp") {
         handleInput();
@@ -335,14 +344,14 @@ function loop() {
         ctx.fillStyle = "#fff";
         ctx.shadowBlur = 20;
         ctx.shadowColor = "#0ff";
-        ctx.font = "bold 40px 'Segoe UI'";
+        ctx.font = "bold 5vw 'Segoe UI'";
         ctx.textAlign = "center";
         ctx.fillText("CRASHED", canvas.width/2, canvas.height/2 - 20);
         
-        ctx.font = "20px 'Segoe UI'";
+        ctx.font = "2.5vw 'Segoe UI'";
         ctx.shadowBlur = 0;
         ctx.fillStyle = "#aaa";
-        ctx.fillText("Click to Restart", canvas.width/2, canvas.height/2 + 30);
+        ctx.fillText("Tap or Click to Restart", canvas.width/2, canvas.height/2 + 40);
         ctx.textAlign = "start";
     }
 
