@@ -138,6 +138,7 @@ const pipes = {
     w: 70,
     gap: 200,
     dx: 4,
+    spawnCounter: 0,
     draw() {
         for (let i = 0; i < this.items.length; i++) {
             let p = this.items[i];
@@ -160,7 +161,9 @@ const pipes = {
         }
     },
     update() {
-        if (frames % Math.floor(140 / (this.dx / 4)) === 0) {
+        this.spawnCounter += (this.dx / 4);
+        
+        if (this.spawnCounter >= 140) {
             let topHeight = Math.max(80, Math.random() * (canvas.height - 80 - this.gap - 160));
             let bottomHeight = canvas.height - 80 - this.gap - topHeight;
             this.items.push({
@@ -169,7 +172,9 @@ const pipes = {
                 bottom: bottomHeight,
                 passed: false
             });
+            this.spawnCounter = 0;
         }
+
         for (let i = 0; i < this.items.length; i++) {
             let p = this.items[i];
             p.x -= this.dx;
@@ -197,6 +202,7 @@ const pipes = {
     reset() {
         this.items = [];
         this.dx = 4;
+        this.spawnCounter = 0;
     }
 };
 
